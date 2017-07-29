@@ -132,6 +132,7 @@ jobCount := TJobManager.Execute<Integer>(
     begin 
      sleep(1000)
      inc(Result);
+    end
   end
 );
 
