@@ -204,7 +204,6 @@ end;
 
 procedure TJobs.TerminateRunners;
 var
-  i : integer;
   r : TJobRunner;
   rq : TQueue<TJobRunner>;
 begin
