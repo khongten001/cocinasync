@@ -5,12 +5,17 @@ interface
 uses System.SysUtils, System.SyncObjs, Cocinasync.Collections;
 
 type
+  EJobExecutionFailure = class(Exception)
+
+  end;
+
   IJob = interface
     procedure SetupJob;
     procedure ExecuteJob;
     procedure FinishJob;
     function Wait(Timeout : Cardinal = INFINITE) : boolean; overload;
     procedure Wait(var Completed : boolean; Timeout : Cardinal = INFINITE); overload;
+    procedure RaiseExceptionIfExists;
   end;
 
   IJob<T> = interface(IJob)
@@ -35,12 +40,22 @@ type
     procedure WaitForAll(Timeout : Cardinal = INFINITE);
   end;
 
+  TJobException = record
+    Clss : String;
+    Msg : String;
+    Triggered : boolean;
+    class function Init : TJobException; static;
+    procedure Update(E: Exception);
+    procedure RaiseExceptionIfExists;
+  end;
+
   TDefaultJob<T> = class(TInterfacedObject, IJob, IJob<T>)
   private
     FProcToExecute : TProc;
     FFuncToExecute : TFunc<T>;
     FEvent : TEvent;
     FResult : T;
+    FException : TJobException;
     procedure SetEvent; inline;
   public
     constructor Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>); reintroduce; virtual;
@@ -52,6 +67,7 @@ type
     function Wait(Timeout : Cardinal = INFINITE) : boolean; overload; inline;
     procedure Wait(var Completed : boolean; Timeout : Cardinal = INFINITE); overload; inline;
     function Result : T; inline;
+    procedure RaiseExceptionIfExists;
   end;
 
   TJobManager = class
@@ -64,6 +80,7 @@ type
     class function Execute(const AJob : TProc; AQueue : TJobQueue; AJobs : IJobs = nil) : IJob; overload; inline;
     class function Execute<T>(const AJob : TFunc<T>; AQueue : TJobQueue<T>; AJobs : IJobs = nil) : IJob<T>; overload; inline;
   end;
+
 
 var
   Jobs : IJobs;
@@ -298,6 +315,7 @@ end;
 constructor TDefaultJob<T>.Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>);
 begin
   inherited Create;
+  FException := TJobException.Init;
   FResult := T(nil);
   FProcToExecute := ProcToExecute;
   FFuncToExecute := FuncToExecute;
@@ -313,11 +331,18 @@ end;
 
 procedure TDefaultJob<T>.ExecuteJob;
 begin
-  if Assigned(FProcToExecute) then
-    FProcToExecute()
-  else if Assigned(FFuncToExecute) then
-    FResult := FFuncToExecute();
-
+  if not FException.Triggered then
+    try
+      if Assigned(FProcToExecute) then
+        FProcToExecute()
+      else if Assigned(FFuncToExecute) then
+        FResult := FFuncToExecute();
+    except
+      on e: Exception do
+      begin
+        FException.Update(e);
+      end;
+    end;
   SetEvent;
 end;
 
@@ -326,9 +351,15 @@ begin
   // Nothing to finish
 end;
 
+procedure TDefaultJob<T>.RaiseExceptionIfExists;
+begin
+  FException.RaiseExceptionIfExists;
+end;
+
 function TDefaultJob<T>.Result: T;
 begin
   Wait;
+  RaiseExceptionIfExists;
   Result := FResult;
 end;
 
@@ -348,6 +379,7 @@ var
 begin
   wr := FEvent.WaitFor(Timeout);
   Completed := wr <> TWaitResult.wrTimeout;
+  RaiseExceptionIfExists;
 end;
 
 function TDefaultJob<T>.Wait(Timeout: Cardinal = INFINITE): boolean;
@@ -356,6 +388,7 @@ var
 begin
   wr := FEvent.WaitFor(Timeout);
   Result := wr <> TWaitResult.wrTimeout;
+  RaiseExceptionIfExists;
 end;
 
 
@@ -418,6 +451,31 @@ begin
       Result := False;
       break;
     end;
+  end;
+end;
+
+{ TJobException }
+
+class function TJobException.Init: TJobException;
+begin
+  Result.Clss := '';
+  Result.Msg := '';
+  Result.Triggered := False;
+end;
+
+procedure TJobException.RaiseExceptionIfExists;
+begin
+  if Self.Triggered then
+    raise EJobExecutionFailure.Create('Job Exception raised "'+Self.Clss+': '+Self.Msg+'"');
+end;
+
+procedure TJobException.Update(E: Exception);
+begin
+  if Assigned(E) then
+  begin
+    Self.Clss := E.ClassName;
+    Self.Msg := E.Message;
+    Self.Triggered := True;
   end;
 end;
 
