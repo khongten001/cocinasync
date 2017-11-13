@@ -16,6 +16,7 @@ type
     function Wait(Timeout : Cardinal = INFINITE) : boolean; overload;
     procedure Wait(var Completed : boolean; Timeout : Cardinal = INFINITE); overload;
     procedure RaiseExceptionIfExists;
+    function ExecutionTime : Cardinal;
   end;
 
   IJob<T> = interface(IJob)
@@ -51,6 +52,7 @@ type
 
   TDefaultJob<T> = class(TInterfacedObject, IJob, IJob<T>)
   private
+    FExecutionTime : Cardinal;
     FProcToExecute : TProc;
     FFuncToExecute : TFunc<T>;
     FEvent : TEvent;
@@ -68,6 +70,7 @@ type
     procedure Wait(var Completed : boolean; Timeout : Cardinal = INFINITE); overload; inline;
     function Result : T; inline;
     procedure RaiseExceptionIfExists;
+    function ExecutionTime : Cardinal;
   end;
 
   TJobManager = class
@@ -315,6 +318,7 @@ end;
 constructor TDefaultJob<T>.Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>);
 begin
   inherited Create;
+  FExecutionTime := 0;
   FException := TJobException.Init;
   FResult := T(nil);
   FProcToExecute := ProcToExecute;
@@ -330,13 +334,20 @@ begin
 end;
 
 procedure TDefaultJob<T>.ExecuteJob;
+var
+  sw : TStopWatch;
 begin
   if not FException.Triggered then
     try
-      if Assigned(FProcToExecute) then
-        FProcToExecute()
-      else if Assigned(FFuncToExecute) then
-        FResult := FFuncToExecute();
+      sw := TStopWatch.Create;
+      try
+        if Assigned(FProcToExecute) then
+          FProcToExecute()
+        else if Assigned(FFuncToExecute) then
+          FResult := FFuncToExecute();
+      finally
+        FExecutionTime := sw.ElapsedMilliseconds;
+      end;
     except
       on e: Exception do
       begin
@@ -344,6 +355,11 @@ begin
       end;
     end;
   SetEvent;
+end;
+
+function TDefaultJob<T>.ExecutionTime: Cardinal;
+begin
+  Result := FExecutionTime;
 end;
 
 procedure TDefaultJob<T>.FinishJob;
