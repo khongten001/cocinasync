@@ -1,0 +1,102 @@
+object cocinasync_fmx_monitor: Tcocinasync_fmx_monitor
+  Left = 0
+  Top = 0
+  BorderIcons = [biSystemMenu]
+  BorderStyle = SizeToolWin
+  Caption = 'Cocinasync Job Monitor'
+  ClientHeight = 264
+  ClientWidth = 428
+  Position = MainFormCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object Panel1: TPanel
+    Align = Left
+    Size.Width = 193.000000000000000000
+    Size.Height = 264.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object Panel3: TPanel
+      Align = Top
+      Size.Width = 193.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object Label1: TLabel
+        Align = Client
+        Margins.Left = 8.000000000000000000
+        Margins.Top = 8.000000000000000000
+        Size.Width = 185.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Queue:'
+      end
+    end
+    object lbQueue: TListBox
+      Align = Client
+      Margins.Left = 8.000000000000000000
+      Margins.Right = 4.000000000000000000
+      Margins.Bottom = 8.000000000000000000
+      Size.Width = 181.000000000000000000
+      Size.Height = 223.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      DisableFocusEffect = True
+      DefaultItemStyles.ItemStyle = ''
+      DefaultItemStyles.GroupHeaderStyle = ''
+      DefaultItemStyles.GroupFooterStyle = ''
+      Viewport.Width = 177.000000000000000000
+      Viewport.Height = 219.000000000000000000
+    end
+  end
+  object Panel2: TPanel
+    Align = Client
+    Size.Width = 226.000000000000000000
+    Size.Height = 264.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object Panel4: TPanel
+      Align = Top
+      Size.Width = 226.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object Label2: TLabel
+        Align = Client
+        Margins.Left = 8.000000000000000000
+        Margins.Top = 8.000000000000000000
+        Size.Width = 218.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Runners:'
+      end
+    end
+    object tvRunners: TTreeView
+      Align = Client
+      Margins.Left = 4.000000000000000000
+      Margins.Right = 8.000000000000000000
+      Margins.Bottom = 8.000000000000000000
+      Size.Width = 214.000000000000000000
+      Size.Height = 223.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Viewport.Width = 210.000000000000000000
+      Viewport.Height = 219.000000000000000000
+    end
+  end
+  object Splitter1: TSplitter
+    Align = Left
+    Cursor = crHSplit
+    MinSize = 20.000000000000000000
+    Margins.Top = 29.000000000000000000
+    Margins.Bottom = 8.000000000000000000
+    Position.X = 193.000000000000000000
+    Position.Y = 29.000000000000000000
+    Size.Width = 9.000000000000000000
+    Size.Height = 227.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

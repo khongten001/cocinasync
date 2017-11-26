@@ -1,4 +1,4 @@
-package cocinasync;
+package cocinasync_consolemonitor;
 
 {$R *.res}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
@@ -28,13 +28,10 @@ package cocinasync;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl;
+  rtl,
+  cocinasync;
 
 contains
-  cocinasync.jobs in 'cocinasync.jobs.pas',
-  cocinasync.async in 'cocinasync.async.pas',
-  cocinasync.global in 'cocinasync.global.pas',
-  cocinasync.collections in 'cocinasync.collections.pas',
-  cocinasync.monitor in 'cocinasync.monitor.pas';
+  cocinasync.monitor.console in 'cocinasync.monitor.console.pas';
 
 end.

@@ -68,10 +68,12 @@ type
 
 implementation
 
-uses System.SysUtils, System.DateUtils, System.SyncObjs, System.Diagnostics;
+uses System.SysUtils, System.DateUtils, System.SyncObjs, System.Diagnostics,
+  System.Generics.Collections;
 
 procedure TestIJobs.Setup;
 begin
+  TJobManager.ShowMonitor;
   FJobs := TJobManager.CreateJobs;
 end;
 
@@ -217,7 +219,7 @@ begin
         FJobs
       );
     if not queue.WaitForAll(iWait) then
-      Assert.Fail('Wait Timeout');
+      Assert.Fail('Wait Timeout: Waited '+iWait.ToString+'ms for '+HowMany.ToString+' jobs');
     if jobLast.Result = 0 then
       Assert.Fail('Job Result was not set');
   finally
@@ -236,27 +238,38 @@ var
   iMS : Cardinal;
   i : integer;
   iWait : integer;
+  lsJobs : TList<IJob>;
+  iExec : integer;
 begin
-  if HowMany > CPUCount then
-  begin
-    Assert.Pass('Skipped Test Due to Test more than CPU Count');
-  end;
-  iWait := 1005+ (HowMany div CPUCount); // give 5ms buffer
+  lsJobs := TList<IJob>.Create;
+  try
+    if HowMany > CPUCount then
+    begin
+      Assert.Pass('Skipped Test Due to Test more than CPU Count');
+    end;
+    iWait := 1005+ (HowMany div CPUCount); // give 5ms buffer
 
-  dtStart := Now;
-  for i := 1 to HowMany do
-    FJobs.Queue(
-      procedure
-      begin
-        Sleep(1000);
-      end
-    );
-  FJobs.WaitForAll(iWait);
-  iMS := MilliSecondsBetween(dtStart, Now);
-  if iMS <= iWait then
-    Assert.Pass('Time: '+iMS.ToString)
-  else
-    Assert.Fail('Unexpected Wait: '+iMS.ToString+' allowed '+(iWait).ToString);
+    dtStart := Now;
+    for i := 1 to HowMany do
+      lsJobs.Add(FJobs.Queue(
+        procedure
+        begin
+          Sleep(1000);
+        end
+      ));
+    FJobs.WaitForAll(iWait);
+    iMS := MilliSecondsBetween(dtStart, Now);
+    iExec := 0;
+
+    for i := 0 to lsJobs.Count-1 do
+      iExec := iExec + lsJobs[i].ExecutionTime;
+    if iMS <= iWait then
+      Assert.Pass('Time: '+iMS.ToString)
+    else
+      Assert.Fail('Unexpected Wait: '+iMS.ToString+' allowed '+(iWait).ToString+' exec: '+iExec.ToString);
+  finally
+    lsJobs.Free;
+  end;
 end;
 
 initialization

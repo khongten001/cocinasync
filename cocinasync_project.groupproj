@@ -15,6 +15,15 @@
         <Projects Include="Profiling\cocinasync_profiler_fastmm.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="cocinasync.vclmonitor.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="cocinasync_fmxmonitor.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="cocinasync_consolemonitor.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -59,14 +68,41 @@
     <Target Name="cocinasync_profiler_fastmm:Make">
         <MSBuild Projects="Profiling\cocinasync_profiler_fastmm.dproj" Targets="Make"/>
     </Target>
+    <Target Name="cocinasync_vclmonitor">
+        <MSBuild Projects="cocinasync.vclmonitor.dproj"/>
+    </Target>
+    <Target Name="cocinasync_vclmonitor:Clean">
+        <MSBuild Projects="cocinasync.vclmonitor.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="cocinasync_vclmonitor:Make">
+        <MSBuild Projects="cocinasync.vclmonitor.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="cocinasync_fmxmonitor">
+        <MSBuild Projects="cocinasync_fmxmonitor.dproj"/>
+    </Target>
+    <Target Name="cocinasync_fmxmonitor:Clean">
+        <MSBuild Projects="cocinasync_fmxmonitor.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="cocinasync_fmxmonitor:Make">
+        <MSBuild Projects="cocinasync_fmxmonitor.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="cocinasync_consolemonitor">
+        <MSBuild Projects="cocinasync_consolemonitor.dproj"/>
+    </Target>
+    <Target Name="cocinasync_consolemonitor:Clean">
+        <MSBuild Projects="cocinasync_consolemonitor.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="cocinasync_consolemonitor:Make">
+        <MSBuild Projects="cocinasync_consolemonitor.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="cocinasync;cocinasync_tests;cocinasync_profiler;cocinasync_profiler_fastmm"/>
+        <CallTarget Targets="cocinasync;cocinasync_tests;cocinasync_profiler;cocinasync_profiler_fastmm;cocinasync_vclmonitor;cocinasync_fmxmonitor;cocinasync_consolemonitor"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="cocinasync:Clean;cocinasync_tests:Clean;cocinasync_profiler:Clean;cocinasync_profiler_fastmm:Clean"/>
+        <CallTarget Targets="cocinasync:Clean;cocinasync_tests:Clean;cocinasync_profiler:Clean;cocinasync_profiler_fastmm:Clean;cocinasync_vclmonitor:Clean;cocinasync_fmxmonitor:Clean;cocinasync_consolemonitor:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="cocinasync:Make;cocinasync_tests:Make;cocinasync_profiler:Make;cocinasync_profiler_fastmm:Make"/>
+        <CallTarget Targets="cocinasync:Make;cocinasync_tests:Make;cocinasync_profiler:Make;cocinasync_profiler_fastmm:Make;cocinasync_vclmonitor:Make;cocinasync_fmxmonitor:Make;cocinasync_consolemonitor:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

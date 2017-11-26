@@ -2,7 +2,7 @@ unit cocinasync.jobs;
 
 interface
 
-uses System.SysUtils, System.SyncObjs, Cocinasync.Collections;
+uses System.SysUtils, System.SyncObjs, Cocinasync.Collections, cocinasync.monitor;
 
 type
   EJobExecutionFailure = class(Exception)
@@ -17,6 +17,7 @@ type
     procedure Wait(var Completed : boolean; Timeout : Cardinal = INFINITE); overload;
     procedure RaiseExceptionIfExists;
     function ExecutionTime : Cardinal;
+    function Name : string;
   end;
 
   IJob<T> = interface(IJob)
@@ -35,10 +36,12 @@ type
     procedure Abort;
   end;
 
+  TJobHandler = reference to procedure(const Job : IJob);
   IJobs = interface
-    procedure Queue(const DoIt : TProc); overload;
-    procedure Queue(const Job : IJob); overload;
+    function Queue(const DoIt : TProc) : IJob; overload;
+    function Queue(const Job : IJob) : IJob; overload;
     procedure WaitForAll(Timeout : Cardinal = INFINITE);
+    function Name : string;
   end;
 
   TJobException = record
@@ -58,9 +61,10 @@ type
     FEvent : TEvent;
     FResult : T;
     FException : TJobException;
+    FName : string;
     procedure SetEvent; inline;
   public
-    constructor Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>); reintroduce; virtual;
+    constructor Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>; AName : string); reintroduce; virtual;
     destructor Destroy; override;
 
     procedure ExecuteJob; inline;
@@ -71,17 +75,24 @@ type
     function Result : T; inline;
     procedure RaiseExceptionIfExists;
     function ExecutionTime : Cardinal;
+    function Name : string;
   end;
 
   TJobManager = class
+  private
+    class var FMonitor : IJobMonitor;
   public
+    class procedure RegisterMonitor(Monitor : IJobMonitor);
+    class procedure UnregisterMonnitor(Monitor : IJobMonitor);
+    class procedure ShowMonitor;
+    class procedure HideMonitor;
     class function CreateJobs(RunnerCount : Cardinal = 0; MaxJobs : Integer = 4096) : IJobs;
-    class function Job(const AJob : TProc) : IJob; overload; inline;
-    class function Job<T>(const AJob : TFunc<T>) : IJob<T>; overload; inline;
-    class function Execute(const AJob : TProc; AJobs : IJobs = nil) : IJob; overload; inline;
-    class function Execute<T>(const AJob : TFunc<T>; AJobs : IJobs = nil) : IJob<T>; overload; inline;
-    class function Execute(const AJob : TProc; AQueue : TJobQueue; AJobs : IJobs = nil) : IJob; overload; inline;
-    class function Execute<T>(const AJob : TFunc<T>; AQueue : TJobQueue<T>; AJobs : IJobs = nil) : IJob<T>; overload; inline;
+    class function Job(const AJob : TProc; const AName : string = '') : IJob; overload; inline;
+    class function Job<T>(const AJob : TFunc<T>; const AName : string = '') : IJob<T>; overload; inline;
+    class function Execute(const AJob : TProc; AJobs : IJobs = nil; const AName : string = '') : IJob; overload; inline;
+    class function Execute<T>(const AJob : TFunc<T>; AJobs : IJobs = nil; const AName : string = '') : IJob<T>; overload; inline;
+    class function Execute(const AJob : TProc; AQueue : TJobQueue; AJobs : IJobs = nil; const AName : string = '') : IJob; overload; inline;
+    class function Execute<T>(const AJob : TFunc<T>; AQueue : TJobQueue<T>; AJobs : IJobs = nil; const AName : string = '') : IJob<T>; overload; inline;
   end;
 
 
@@ -99,10 +110,11 @@ type
   strict private
     [Weak]
     FJobs : TJobs;
+    FName : string;
   protected
     procedure Execute; override;
   public
-    constructor Create(Jobs : TJobs); reintroduce; virtual;
+    constructor Create(Jobs : TJobs; JobNumber : integer); reintroduce; virtual;
   end;
 
   TJobs = class(TInterfacedObject, IJobs)
@@ -110,17 +122,19 @@ type
     FTerminating : boolean;
     FRunners : TQueue<TJobRunner>;
     FJobs : TQueue<IJob>;
+    FName : string;
     procedure TerminateRunners;
   private
     FJobRunnerCount : integer;
     FJobsInProcess : integer;
   public
-    constructor Create(RunnerCount : Integer; MaxJobs : Integer = 4096); reintroduce; virtual;
+    constructor Create(RunnerCount : Integer; MaxJobs : Integer = 4096; const AName : string = ''); reintroduce; virtual;
     destructor Destroy; override;
 
     function Next : IJob; inline;
-    procedure Queue(const DoIt : TProc); overload; inline;
-    procedure Queue(const Job : IJob); overload; inline;
+    function Name : string;
+    function Queue(const DoIt : TProc) : IJob; overload; inline;
+    function Queue(const Job : IJob) : IJob; overload; inline;
     procedure WaitForAll(Timeout : Cardinal = INFINITE); inline;
     property Terminating : boolean read FTerminating;
   end;
@@ -139,7 +153,7 @@ begin
   Result := TJobs.Create(iCnt, MaxJobs);
 end;
 
-class function TJobManager.Execute(const AJob: TProc; AJobs : IJobs = nil): IJob;
+class function TJobManager.Execute(const AJob: TProc; AJobs : IJobs = nil; const AName : string = ''): IJob;
 begin
   Result := Job(AJob);
   if AJobs = nil then
@@ -147,7 +161,7 @@ begin
   AJobs.Queue(Result);
 end;
 
-class function TJobManager.Execute<T>(const AJob: TFunc<T>; AJobs : IJobs = nil): IJob<T>;
+class function TJobManager.Execute<T>(const AJob: TFunc<T>; AJobs : IJobs = nil; const AName : string = ''): IJob<T>;
 begin
   Result := Job<T>(AJob);
   if AJobs = nil then
@@ -155,7 +169,7 @@ begin
   AJobs.Queue(Result);
 end;
 
-class function TJobManager.Execute(const AJob: TProc; AQueue: TJobQueue; AJobs : IJobs = nil): IJob;
+class function TJobManager.Execute(const AJob: TProc; AQueue: TJobQueue; AJobs : IJobs = nil; const AName : string = ''): IJob;
 begin
   Result := Job(AJob);
   AQueue.Enqueue(Result);
@@ -164,7 +178,7 @@ begin
   Jobs.Queue(Result);
 end;
 
-class function TJobManager.Execute<T>(const AJob: TFunc<T>; AQueue: TJobQueue<T>; AJobs : IJobs = nil): IJob<T>;
+class function TJobManager.Execute<T>(const AJob: TFunc<T>; AQueue: TJobQueue<T>; AJobs : IJobs = nil; const AName : string = ''): IJob<T>;
 begin
   Result := Job<T>(AJob);
   AQueue.Enqueue(Result);
@@ -173,28 +187,54 @@ begin
   AJobs.Queue(Result);
 end;
 
-class function TJobManager.Job(const AJob: TProc): IJob;
+class procedure TJobManager.HideMonitor;
 begin
-  Result := TDefaultJob<Boolean>.Create(AJob,nil);
+  if Assigned(FMonitor) then
+    FMonitor.OnHideMonitor();
 end;
 
-class function TJobManager.Job<T>(const AJob: TFunc<T>): IJob<T>;
+class function TJobManager.Job(const AJob: TProc; const AName : string = ''): IJob;
 begin
-  Result := TDefaultJob<T>.Create(nil, AJob);
+  Result := TDefaultJob<Boolean>.Create(AJob,nil, AName);
+end;
+
+class function TJobManager.Job<T>(const AJob: TFunc<T>; const AName : string = ''): IJob<T>;
+begin
+  Result := TDefaultJob<T>.Create(nil, AJob, AName);
+end;
+
+class procedure TJobManager.RegisterMonitor(Monitor: IJobMonitor);
+begin
+  FMonitor := Monitor;
+end;
+
+class procedure TJobManager.ShowMonitor;
+begin
+  if Assigned(FMonitor) then
+    FMonitor.OnShowMonitor;
+end;
+
+class procedure TJobManager.UnregisterMonnitor(Monitor: IJobMonitor);
+begin
+  TInterlocked.CompareExchange(Pointer(FMonitor), nil, Pointer(Monitor));
 end;
 
 { TJobs }
 
-constructor TJobs.Create(RunnerCount: Integer; MaxJobs : Integer = 4096);
+constructor TJobs.Create(RunnerCount: Integer; MaxJobs : Integer = 4096; const AName : string = '');
 begin
   inherited Create;
+  if AName = '' then
+    FName := Classname+'($'+IntToHex(Integer(@Self),SizeOf(Pointer))+')'
+  else
+    FName := AName;
   FTerminating := False;
   FJobs := TQueue<IJob>.Create(MaxJobs);
   FJobRunnerCount := 0;
   FJobsInProcess := 0;
   FRunners := TQueue<TJobRunner>.Create(RunnerCount+1);
   while FRunners.Count < RunnerCount do
-    FRunners.Enqueue(TJobRunner.Create(Self));
+    FRunners.Enqueue(TJobRunner.Create(Self,FRunners.Count+1));
 end;
 
 destructor TJobs.Destroy;
@@ -205,20 +245,26 @@ begin
   inherited;
 end;
 
+function TJobs.Name: string;
+begin
+  Result := FName;
+end;
+
 function TJobs.Next: IJob;
 begin
   Result := FJobs.Dequeue;
 end;
 
-procedure TJobs.Queue(const DoIt: TProc);
+function TJobs.Queue(const DoIt: TProc) : IJob;
 begin
-  Queue(TJobManager.Job(DoIt));
+  Result := Queue(TJobManager.Job(DoIt));
 end;
 
-procedure TJobs.Queue(const Job : IJob);
+function TJobs.Queue(const Job : IJob) : IJob;
 begin
   if FTerminating then
     raise Exception.Create('Cannot queue while Jobs are terminating.');
+  Result := Job;
   FJobs.Enqueue(Job);
 end;
 
@@ -270,10 +316,11 @@ end;
 
 { TJobRunner }
 
-constructor TJobRunner.Create(Jobs : TJobs);
+constructor TJobRunner.Create(Jobs : TJobs; JobNumber : integer);
 begin
   inherited Create(False);
   FJobs := Jobs;
+  FName := FJobs.Name+'.'+JobNumber.ToString;
   FreeOnTerminate := False;
 end;
 
@@ -295,12 +342,19 @@ begin
 
         TInterlocked.Increment(FJobs.FJobsInProcess);
         try
-          wait.Reset;
-          job.SetupJob;
+          if Assigned(TJobManager.FMonitor) then
+            TJobManager.FMonitor.OnBeginJob(FName, job.Name);
           try
-            job.ExecuteJob;
+            wait.Reset;
+            job.SetupJob;
+            try
+              job.ExecuteJob;
+            finally
+              job.FinishJob;
+            end;
           finally
-            job.FinishJob;
+            if Assigned(TJobManager.FMonitor) then
+              TJobManager.FMonitor.OnEndJob(FName, job.Name);
           end;
         finally
           TInterlocked.Decrement(FJobs.FJobsInProcess);
@@ -315,10 +369,14 @@ end;
 
 { TDefaultJob }
 
-constructor TDefaultJob<T>.Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>);
+constructor TDefaultJob<T>.Create(ProcToExecute : TProc; FuncToExecute : TFunc<T>; AName : string);
 begin
   inherited Create;
   FExecutionTime := 0;
+  if AName = '' then
+    FName := ClassName+'($'+IntToHex(Integer(@Self),SizeOf(Pointer))+')'
+  else
+    FName := AName;
   FException := TJobException.Init;
   FResult := T(nil);
   FProcToExecute := ProcToExecute;
@@ -341,6 +399,7 @@ begin
     try
       sw := TStopWatch.Create;
       try
+        sw.Start;
         if Assigned(FProcToExecute) then
           FProcToExecute()
         else if Assigned(FFuncToExecute) then
@@ -365,6 +424,11 @@ end;
 procedure TDefaultJob<T>.FinishJob;
 begin
   // Nothing to finish
+end;
+
+function TDefaultJob<T>.Name: string;
+begin
+  Result := FName;
 end;
 
 procedure TDefaultJob<T>.RaiseExceptionIfExists;
