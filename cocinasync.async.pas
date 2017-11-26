@@ -32,7 +32,8 @@ type
 
     procedure AfterDo(const After : Cardinal; const &Do : TProc; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil);
     procedure DoLater(const &Do : TProc; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil);
-    procedure OnDo(const &On : TFunc<Boolean>; const &Do : TProc; CheckInterval : integer = 1000; &Repeat : TFunc<boolean> = nil; SynchronizedOn : boolean = false; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil);
+    procedure OnDo(const &On : TFunc<Boolean>; const &Do : TProc; CheckInterval : integer = 1000; &Repeat : TFunc<boolean> = nil; SynchronizedOn : boolean = false; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil); overload;
+    procedure OnDo(const &On : TFunc<Boolean>; const OnException : TProc<Exception>; const &Do : TProc; const DoException : TProc<Exception>; CheckInterval : integer = 1000; &Repeat : TFunc<boolean> = nil; RepeatException : TProc<Exception> = nil; SynchronizedOn : boolean = false; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil); overload;
     function DoEvery(const MS : Cardinal; const &Do : TFunc<Boolean>; SynchronizedDo : boolean = true) : TThread;
 
     constructor Create; reintroduce; virtual;
@@ -332,7 +333,10 @@ begin
   );
 end;
 
-procedure TAsync.OnDo(const &On : TFunc<Boolean>; const &Do : TProc; CheckInterval : integer = 1000; &Repeat : TFunc<boolean> = nil; SynchronizedOn : boolean = false; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil);
+procedure TAsync.OnDo(const &On: TFunc<Boolean>; const OnException : TProc<Exception>; const &Do: TProc;
+  const DoException: TProc<Exception>; CheckInterval: integer;
+  &Repeat: TFunc<boolean>; RepeatException : TProc<Exception>; SynchronizedOn, SynchronizedDo: boolean;
+  const JobsOverride: IJobs);
 begin
   if not Assigned(&Repeat) then
     &Repeat :=
@@ -344,7 +348,7 @@ begin
   TJobManager.Execute(
     procedure
     var
-      bOn : Boolean;
+      bOn, bRepeat : Boolean;
     begin
       FCounter.NotifyThreadStart;
       try
@@ -354,15 +358,21 @@ begin
           repeat
             if FTerminating then
               Exit;
-            if SynchronizedOn then
-              SynchronizeIfInThread(
-                procedure
-                begin
-                  bOn := &On();
-                end
-              )
-            else
-              bOn := &On();
+            try
+              if SynchronizedOn then
+                SynchronizeIfInThread(
+                  procedure
+                  begin
+                    bOn := &On();
+                  end
+                )
+              else
+                bOn := &On();
+            except
+              on E: Exception do
+                if Assigned(&OnException) then
+                  &OnException(E);
+            end;
             if bOn then
               break;
             sleep(CheckInterval)
@@ -370,22 +380,43 @@ begin
 
           if FTerminating then
             Exit;
-          if SynchronizedDo then
-            SynchronizeIfInThread(
-              procedure
-              begin
-                &Do();
-              end
-            )
-          else
-            &Do();
-        until not &Repeat();
+          try
+            if SynchronizedDo then
+              SynchronizeIfInThread(
+                procedure
+                begin
+                  &Do();
+                end
+              )
+            else
+              &Do();
+          except
+            on E: Exception do
+              if Assigned(DoException) then
+                DoException(E);
+          end;
+          try
+            bRepeat := &Repeat();
+          except
+            on E: Exception do
+            begin
+              if Assigned(RepeatException) then
+                RepeatException(E);
+              bRepeat := False;
+            end;
+          end;
+        until not bRepeat;
       finally
         FCounter.NotifyThreadEnd;
       end;
     end,
     JobsOverride, 'TAsync.OnDo'
   );
+end;
+
+procedure TAsync.OnDo(const &On : TFunc<Boolean>; const &Do : TProc; CheckInterval : integer = 1000; &Repeat : TFunc<boolean> = nil; SynchronizedOn : boolean = false; SynchronizedDo : boolean = true; const JobsOverride : IJobs = nil);
+begin
+  OnDo(&On, nil, &Do, nil,CheckInterval, &Repeat, nil, SynchronizedOn, SynchronizedDo, JobsOverride);
 end;
 
 initialization
