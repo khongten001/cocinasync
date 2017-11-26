@@ -7,6 +7,7 @@ object cocinasync_fmx_monitor: Tcocinasync_fmx_monitor
   ClientHeight = 264
   ClientWidth = 428
   Position = MainFormCenter
+  FormStyle = StayOnTop
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]

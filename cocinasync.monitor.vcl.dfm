@@ -12,6 +12,7 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  FormStyle = fsStayOnTop
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCreate = FormCreate
@@ -38,8 +39,6 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
     BevelOuter = bvNone
     Caption = 'Panel2'
     TabOrder = 0
-    ExplicitTop = 29
-    ExplicitHeight = 265
     object lbQueue: TListBox
       AlignWithMargins = True
       Left = 8
@@ -53,10 +52,6 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
       Align = alClient
       ItemHeight = 13
       TabOrder = 0
-      ExplicitLeft = 352
-      ExplicitTop = 80
-      ExplicitWidth = 121
-      ExplicitHeight = 97
     end
     object Panel1: TPanel
       Left = 0
@@ -66,9 +61,6 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitLeft = 1
-      ExplicitTop = 1
-      ExplicitWidth = 263
       object Label1: TLabel
         Left = 8
         Top = 10
@@ -86,10 +78,6 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitLeft = 0
-    ExplicitTop = 8
-    ExplicitWidth = 563
-    ExplicitHeight = 29
     object Panel4: TPanel
       Left = 0
       Top = 0
@@ -98,9 +86,6 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitLeft = 1
-      ExplicitTop = 1
-      ExplicitWidth = 293
       object Label2: TLabel
         Left = 8
         Top = 10
@@ -122,10 +107,6 @@ object cocinasync_vcl_monitor: Tcocinasync_vcl_monitor
       Align = alClient
       Indent = 19
       TabOrder = 1
-      ExplicitLeft = 56
-      ExplicitTop = 96
-      ExplicitWidth = 121
-      ExplicitHeight = 97
     end
   end
 end
