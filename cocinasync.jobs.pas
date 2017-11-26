@@ -83,7 +83,7 @@ type
     class var FMonitor : IJobMonitor;
   public
     class procedure RegisterMonitor(Monitor : IJobMonitor);
-    class procedure UnregisterMonnitor(Monitor : IJobMonitor);
+    class procedure UnregisterMonitor(Monitor : IJobMonitor);
     class procedure ShowMonitor;
     class procedure HideMonitor;
     class function CreateJobs(RunnerCount : Cardinal = 0; MaxJobs : Integer = 4096; const Name : string = '') : IJobs;
@@ -214,7 +214,7 @@ begin
     FMonitor.OnShowMonitor;
 end;
 
-class procedure TJobManager.UnregisterMonnitor(Monitor: IJobMonitor);
+class procedure TJobManager.UnregisterMonitor(Monitor: IJobMonitor);
 begin
   TInterlocked.CompareExchange(Pointer(FMonitor), nil, Pointer(Monitor));
 end;
