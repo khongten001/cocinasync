@@ -302,7 +302,7 @@ begin
         FCounter.NotifyThreadEnd;
       end;
     end,
-    JobsOverride
+    JobsOverride, 'TAsync.AfterDo'
   );
 end;
 
@@ -328,7 +328,7 @@ begin
         FCounter.NotifyThreadEnd;
       end;
     end,
-    JobsOverride
+    JobsOverride, 'TAsync.DoLater'
   );
 end;
 
@@ -384,7 +384,7 @@ begin
         FCounter.NotifyThreadEnd;
       end;
     end,
-    JobsOverride
+    JobsOverride, 'TAsync.OnDo'
   );
 end;
 
