@@ -86,7 +86,7 @@ type
     class procedure UnregisterMonnitor(Monitor : IJobMonitor);
     class procedure ShowMonitor;
     class procedure HideMonitor;
-    class function CreateJobs(RunnerCount : Cardinal = 0; MaxJobs : Integer = 4096) : IJobs;
+    class function CreateJobs(RunnerCount : Cardinal = 0; MaxJobs : Integer = 4096; const Name : string = '') : IJobs;
     class function Job(const AJob : TProc; const AName : string = '') : IJob; overload; inline;
     class function Job<T>(const AJob : TFunc<T>; const AName : string = '') : IJob<T>; overload; inline;
     class function Execute(const AJob : TProc; AJobs : IJobs = nil; const AName : string = '') : IJob; overload; inline;
@@ -141,7 +141,7 @@ type
 
 { TJobManager }
 
-class function TJobManager.CreateJobs(RunnerCount : Cardinal = 0; MaxJobs : Integer = 4096) : IJobs;
+class function TJobManager.CreateJobs(RunnerCount : Cardinal = 0; MaxJobs : Integer = 4096; const Name : string = '') : IJobs;
 var
   iCnt : Cardinal;
 begin
@@ -150,7 +150,7 @@ begin
   else
     iCnt := RunnerCount;
 
-  Result := TJobs.Create(iCnt, MaxJobs);
+  Result := TJobs.Create(iCnt, MaxJobs, Name);
 end;
 
 class function TJobManager.Execute(const AJob: TProc; AJobs : IJobs = nil; const AName : string = ''): IJob;
@@ -560,7 +560,7 @@ begin
 end;
 
 initialization
-  Jobs := TJobManager.CreateJobs;
+  Jobs := TJobManager.CreateJobs(0,4096,'Default');
 
 finalization
   Jobs.WaitForAll;
