@@ -47,7 +47,7 @@ end;
 
 procedure Tcocinasync_fmx_monitor.FormDestroy(Sender: TObject);
 begin
-   TJobManager.UnregisterMonnitor(Self);
+   TJobManager.UnregisterMonitor(Self);
 end;
 
 procedure Tcocinasync_fmx_monitor.OnBeginJob(const Runner, ID: string);
