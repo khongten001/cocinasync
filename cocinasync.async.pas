@@ -358,21 +358,27 @@ begin
           repeat
             if FTerminating then
               Exit;
-            try
-              if SynchronizedOn then
-                SynchronizeIfInThread(
-                  procedure
-                  begin
+            if SynchronizedOn then
+              SynchronizeIfInThread(
+                procedure
+                begin
+                  try
                     bOn := &On();
-                  end
-                )
+                  except
+                    on E: Exception do
+                      if Assigned(&OnException) then
+                        &OnException(E);
+                  end;
+                end
+              )
               else
-                bOn := &On();
-            except
-              on E: Exception do
-                if Assigned(&OnException) then
-                  &OnException(E);
-            end;
+                try
+                  bOn := &On();
+                except
+                  on E: Exception do
+                    if Assigned(&OnException) then
+                      &OnException(E);
+                end;
             if bOn then
               break;
             sleep(CheckInterval)
@@ -380,21 +386,27 @@ begin
 
           if FTerminating then
             Exit;
-          try
-            if SynchronizedDo then
-              SynchronizeIfInThread(
-                procedure
-                begin
+          if SynchronizedDo then
+            SynchronizeIfInThread(
+              procedure
+              begin
+                try
                   &Do();
-                end
-              )
+                except
+                  on E: Exception do
+                    if Assigned(DoException) then
+                      DoException(E);
+                end;
+              end
+            )
             else
-              &Do();
-          except
-            on E: Exception do
-              if Assigned(DoException) then
-                DoException(E);
-          end;
+              try
+                &Do();
+              except
+                on E: Exception do
+                  if Assigned(DoException) then
+                    DoException(E);
+              end;
           try
             bRepeat := &Repeat();
           except
