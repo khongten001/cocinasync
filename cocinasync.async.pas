@@ -399,14 +399,15 @@ begin
                 end;
               end
             )
-            else
-              try
-                &Do();
-              except
-                on E: Exception do
-                  if Assigned(DoException) then
-                    DoException(E);
-              end;
+          else
+            try
+              &Do();
+            except
+              on E: Exception do
+                if Assigned(DoException) then
+                  DoException(E);
+            end;
+          bRepeat := False;
           try
             bRepeat := &Repeat();
           except
