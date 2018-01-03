@@ -375,6 +375,8 @@ begin
                 try
                   bOn := &On();
                 except
+                  on e: EAbort do
+                    exit;
                   on E: Exception do
                     if Assigned(&OnException) then
                       &OnException(E);
@@ -393,6 +395,8 @@ begin
                 try
                   &Do();
                 except
+                  on e: EAbort do
+                    exit;
                   on E: Exception do
                     if Assigned(DoException) then
                       DoException(E);
