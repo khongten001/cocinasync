@@ -146,9 +146,12 @@ var
   iCnt : Cardinal;
 begin
   if RunnerCount = 0 then
-    iCnt := CPUCount
+    iCnt := CPUCount*4  // default to 4 threads per native/hyperthreaded processing unit.
   else
     iCnt := RunnerCount;
+
+  if iCnt < 6 then
+    iCnt := 6;
 
   Result := TJobs.Create(iCnt, MaxJobs, Name);
 end;
