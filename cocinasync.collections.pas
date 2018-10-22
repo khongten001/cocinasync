@@ -29,7 +29,9 @@ type
     function GetItems(idx: integer): T;  inline;
     function GetCount: integer;  inline;
   public
-    constructor Create(Size : Integer); reintroduce; virtual;
+    constructor Create(Size : Integer); reintroduce; overload; virtual;
+    constructor Create(&Array : TArray<T>); reintroduce; overload; virtual;
+    constructor Create(&ArrayPtr : Pointer); reintroduce; overload; virtual;
     destructor Destroy; override;
 
     procedure Enqueue(Value : T); inline;
@@ -38,6 +40,7 @@ type
 
     property Items[idx : integer] : T read GetItems; default;
     property Count : integer read GetCount;
+    property Size : integer read FSize;
   end;
 
   TStack<T> = class(TObject)
@@ -167,6 +170,22 @@ begin
   inherited Create;
   FSize := Size;
   SetLength(FData, Size);
+end;
+
+constructor TQueue<T>.Create(&Array: TArray<T>);
+var
+  i: Integer;
+begin
+  Create(Length(&Array)+1);
+  for i := low(&Array) to high(&Array) do
+    Enqueue(&Array[i]);
+end;
+
+constructor TQueue<T>.Create(ArrayPtr: Pointer);
+var
+  i: Integer;
+begin
+  Create(TArray<T>(ArrayPtr^));
 end;
 
 function TQueue<T>.Dequeue: T;
