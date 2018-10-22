@@ -93,8 +93,10 @@ type
     class function Execute<T>(const AJob : TFunc<T>; AJobs : IJobs = nil; const AName : string = '') : IJob<T>; overload; inline;
     class function Execute(const AJob : TProc; AQueue : TJobQueue; AJobs : IJobs = nil; const AName : string = '') : IJob; overload; inline;
     class function Execute<T>(const AJob : TFunc<T>; AQueue : TJobQueue<T>; AJobs : IJobs = nil; const AName : string = '') : IJob<T>; overload; inline;
-  end;
 
+    class procedure ProcessQueue<T>(AQueue : TQueue<T>; AJob : TProc<T>;
+      WaitForItems : boolean = true; AOnWait : TProc<boolean> = nil);
+  end;
 
 var
   Jobs : IJobs;
@@ -204,6 +206,57 @@ end;
 class function TJobManager.Job<T>(const AJob: TFunc<T>; const AName : string = ''): IJob<T>;
 begin
   Result := TDefaultJob<T>.Create(nil, AJob, AName);
+end;
+
+class procedure TJobManager.ProcessQueue<T>(AQueue: TQueue<T>; AJob: TProc<T>;
+  WaitForItems : boolean = true; AOnWait: TProc<boolean> = nil);
+var
+  i: Integer;
+  jobs : TJobQueue;
+  bAbort : Boolean;
+  sw : TSpinWait;
+begin
+  bAbort := False;
+  repeat
+    jobs := TJobQueue.Create(AQueue.Size);
+    try
+      for i := AQueue.Count-1 downto 0 do
+        jobs.Enqueue(
+          TJobManager.Execute(
+            procedure
+            var
+              val : T;
+            begin
+              if bAbort then
+                exit;
+              val := AQueue.Dequeue;
+              if Assigned(AJob) then
+                AJob(val);
+            end
+          )
+        );
+
+      if Assigned(AOnWait) then
+      begin
+        while not jobs.WaitForAll(10) do
+          AOnWait(bAbort);
+      end else
+        jobs.WaitForAll;
+    finally
+      jobs.Free;
+    end;
+
+    if WaitForItems then
+    begin
+      sw.Reset;
+      while AQueue.Count = 0 do
+      begin
+        if sw.NextSpinCycleWillYield then
+          AOnWait(bAbort);
+        sw.SpinCycle;
+      end;
+    end;
+  until (not WaitForItems) or bAbort;
 end;
 
 class procedure TJobManager.RegisterMonitor(Monitor: IJobMonitor);
