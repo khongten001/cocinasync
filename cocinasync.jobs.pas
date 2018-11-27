@@ -251,7 +251,7 @@ begin
       sw.Reset;
       while AQueue.Count = 0 do
       begin
-        if sw.NextSpinCycleWillYield then
+        if sw.NextSpinCycleWillYield and Assigned(AOnWait) then
           AOnWait(bAbort);
         sw.SpinCycle;
       end;
