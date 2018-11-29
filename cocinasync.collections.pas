@@ -41,6 +41,7 @@ type
     property Items[idx : integer] : T read GetItems; default;
     property Count : integer read GetCount;
     property Size : integer read FSize;
+    procedure WithDo(AJob : TProc<T>; WaitForItems : boolean = false; AOnWait : TProc<boolean> = nil);
   end;
 
   TStack<T> = class(TObject)
@@ -128,7 +129,7 @@ type
 
 implementation
 
-uses Math, System.Generics.Collections;
+uses Math, System.Generics.Collections, cocinasync.jobs;
 
 { TInterlockedHelper }
 
@@ -263,6 +264,12 @@ end;
 function TQueue<T>.IndexOf(idx: integer): integer;
 begin
   result := idx mod FSize;
+end;
+
+procedure TQueue<T>.WithDo(AJob: TProc<T>; WaitForItems: boolean;
+  AOnWait: TProc<boolean>);
+begin
+  TJobManager.ProcessQueue<T>(Self, AJob, WaitForItems, AOnWait);
 end;
 
 { TStack<T> }

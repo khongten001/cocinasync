@@ -95,7 +95,7 @@ type
     class function Execute<T>(const AJob : TFunc<T>; AQueue : TJobQueue<T>; AJobs : IJobs = nil; const AName : string = '') : IJob<T>; overload; inline;
 
     class procedure ProcessQueue<T>(AQueue : TQueue<T>; AJob : TProc<T>;
-      WaitForItems : boolean = true; AOnWait : TProc<boolean> = nil);
+      WaitForItems : boolean = false; AOnWait : TProc<boolean> = nil);
   end;
 
 var
@@ -209,7 +209,7 @@ begin
 end;
 
 class procedure TJobManager.ProcessQueue<T>(AQueue: TQueue<T>; AJob: TProc<T>;
-  WaitForItems : boolean = true; AOnWait: TProc<boolean> = nil);
+  WaitForItems : boolean = false; AOnWait: TProc<boolean> = nil);
 var
   i: Integer;
   jobs : TJobQueue;
